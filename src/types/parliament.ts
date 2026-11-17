@@ -5,6 +5,8 @@ export type Topic = {
   id: TopicId;
   label: string;
   description: string;
+  /** English text for the language switch; Greek is shown when it is missing. */
+  en?: { label: string; description: string };
 };
 
 export type Party = {
@@ -12,6 +14,7 @@ export type Party = {
   shortName: string;
   fullName: string;
   accent: string;
+  en?: { shortName: string; fullName: string };
 };
 
 export type Statement = {
@@ -26,6 +29,7 @@ export type Statement = {
   quote: string;
   sourceUrl: string;
   placeholder: boolean;
+  en?: { speaker?: string; role?: string; summary?: string; quote?: string; subcategory?: string };
 };
 
 export type StatementFilters = {

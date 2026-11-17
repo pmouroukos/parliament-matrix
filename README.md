@@ -26,6 +26,12 @@ Parliament Matrix organizes statement records by topic and party. Citizens can n
 
 Filters work together and are applied locally after loading the dataset. Search examines existing records; it does not generate statements or call an external search service.
 
+## Why the sample parties are invented
+
+The mock data used to put demo statements under the names of real Greek parties (ΝΔ, ΠΑΣΟΚ, ΣΥΡΙΖΑ and so on). Those statements and quotes were written for the demo, so any screenshot of it showed real parties saying things they never said. That is easy to take out of context, and it cuts against the project's own promise to be neutral and source-checked.
+
+The sample data now uses invented parties, Κόμμα Α to Κόμμα Η, with colours that do not match any real party. The demo still looks and works like the real thing, but it attributes nothing to anyone. Real parties belong in the Supabase data, next to real statements with real sources.
+
 ## Screenshots
 
 > **Placeholder — screenshots to be added.**

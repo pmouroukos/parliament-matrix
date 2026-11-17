@@ -10,7 +10,7 @@ import type {
   Topic,
   TopicId,
 } from "@/types/parliament";
-import { PLACEHOLDER_BANNER } from "@/data/copy";
+import { usePrefs } from "@/lib/prefs";
 import { PartyFilters } from "@/components/PartyFilters";
 import { StatementCard } from "@/components/StatementCard";
 import { TopicSidebar } from "@/components/TopicSidebar";
@@ -28,6 +28,12 @@ export function Dashboard() {
   const [filters, setFilters] = useState<AdvancedFilters>(DEFAULT_FILTERS);
 
   const mockMode = isUsingMockData();
+  const { lang, theme, t, setLang, toggleTheme } = usePrefs();
+
+  /* The same data in the chosen language: English where the record has it, Greek otherwise. */
+  const shownTopics = useMemo(() => lang === "en" ? topics.map((x) => x.en ? { ...x, ...x.en } : x) : topics, [topics, lang]);
+  const shownParties = useMemo(() => lang === "en" ? parties.map((x) => x.en ? { ...x, ...x.en } : x) : parties, [parties, lang]);
+  const shownStatements = useMemo(() => lang === "en" ? statements.map((x) => x.en ? { ...x, ...Object.fromEntries(Object.entries(x.en).filter(([, v]) => v)) } : x) : statements, [statements, lang]);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +56,7 @@ export function Dashboard() {
         setError(
           err instanceof Error
             ? err.message
-            : "Σφάλμα φόρτωσης δεδομένων."
+            : ""
         );
       } finally {
         if (!cancelled) {
@@ -66,16 +72,16 @@ export function Dashboard() {
     };
   }, []);
 
-  const topic = topics.find((item) => item.id === topicId);
+  const topic = shownTopics.find((item) => item.id === topicId);
 
-  const subcategories = useMemo(() => [...new Set(statements
+  const subcategories = useMemo(() => [...new Set(shownStatements
     .filter((statement) => statement.topicId === topicId)
     .map((statement) => statement.subcategory?.trim() ?? "")
-    .filter(Boolean))].sort((a, b) => a.localeCompare(b, "el")), [statements, topicId]);
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b, lang)), [shownStatements, topicId, lang]);
 
   const visibleStatements = useMemo(
-    () => filterStatements(statements, topicId, selectedParties, filters),
-    [statements, selectedParties, topicId, filters]
+    () => filterStatements(shownStatements, topicId, selectedParties, filters),
+    [shownStatements, selectedParties, topicId, filters]
   );
   const invalidRange = Boolean(filters.startDate && filters.endDate && filters.startDate > filters.endDate);
 
@@ -105,81 +111,76 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f4f1ea] text-[#1c1917]">
-      <header className="border-b border-[#d6d0c4] bg-[#1b2a4a] text-[#f8f4ec]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 sm:px-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.22em] text-[#d4b072] uppercase">
-            «Οι πολιτικές θέσεις, ξεκάθαρα και συγκεντρωμένα.»
-</p>
-            <h1 className="mt-1 font-serif text-3xl tracking-tight sm:text-4xl">
-              Parliament Matrix
-            </h1>
-
-            <p className="mt-1 max-w-2xl text-sm text-[#d7dde8]">
-              Σύγκριση θέσεων κομμάτων της Βουλής των Ελλήνων ανά θέμα,
-              με περίληψη, παράθεση, ομιλητή, ημερομηνία και πηγή.
-            </p>
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+      <header className="bg-navy text-[#f8f4ec]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-6 sm:px-6">
+          <h1 className="font-serif text-4xl tracking-tight sm:text-5xl">
+            Parliament Matrix
+          </h1>
+          <div className="flex items-center gap-2">
+            <div role="group" aria-label={t.language} className="flex rounded-full border border-white/25 p-0.5 text-sm font-semibold">
+              {(["el", "en"] as const).map((l) => (
+                <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l}
+                  className={`rounded-full px-3 py-1 transition ${lang === l ? "bg-[#f8f4ec] text-navy" : "text-[#f8f4ec]/75 hover:text-[#f8f4ec]"}`}>
+                  {l === "el" ? "ΕΛ" : "EN"}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={toggleTheme} aria-label={theme === "dark" ? t.toLight : t.toDark} title={theme === "dark" ? t.toLight : t.toDark}
+              className="grid h-9 w-9 place-items-center rounded-full border border-white/25 text-[#f8f4ec] transition hover:bg-white/10">
+              {theme === "dark" ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+              )}
+            </button>
           </div>
-
-          <p className="rounded-full border border-[#d4b072]/50 bg-[#24365c] px-3 py-1 text-xs text-[#f1e3c4]">
-            {mockMode
-              ? "Τοπικά δεδομένα υπόδειγμα"
-              : "Δεδομένα από Supabase"}
-          </p>
         </div>
       </header>
 
       {mockMode && (
-        <div className="border-b border-amber-300 bg-amber-100 px-4 py-2.5 text-center text-sm font-medium text-amber-950 sm:px-6">
-          {PLACEHOLDER_BANNER}
-        </div>
+        <p className="border-b border-line px-4 py-2 text-center text-xs text-muted sm:px-6">
+          {t.placeholderBanner}
+        </p>
       )}
 
       {!mockMode && !loading && !error && (
-        <div className="border-b border-stone-200 bg-stone-100 px-4 py-2 text-center text-xs text-stone-700">
-          Οι καταχωρίσεις προέρχονται από τη βάση δεδομένων.
-          Ελέγξτε τις πρωτογενείς πηγές πριν τις θεωρήσετε επαληθευμένες.
-        </div>
+        <p className="border-b border-line px-4 py-2 text-center text-xs text-muted">
+          {t.liveBanner}
+        </p>
       )}
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 md:grid-cols-[15rem_minmax(0,1fr)]">
+      <div className="mx-auto grid max-w-7xl gap-7 px-4 py-7 sm:px-6 md:grid-cols-[15rem_minmax(0,1fr)]">
         {loading ? (
           <div className="md:col-span-2">
-            Φόρτωση πολιτικών θέσεων...
+            {t.loading}
           </div>
         ) : error ? (
           <div
             role="alert"
-            className="md:col-span-2 rounded-xl border border-red-300 bg-red-50 p-5 text-red-800"
+            className="md:col-span-2 rounded-xl border border-red-900 bg-red-950/40 p-5 text-red-300"
           >
-            Σφάλμα σύνδεσης: {error}
+            {t.loadError} {error || t.loadErrorFallback}
           </div>
         ) : topics.length === 0 ? (
-          <div className="md:col-span-2 rounded-xl bg-white p-6">
-            Δεν υπάρχουν διαθέσιμες πολιτικές θέσεις στη βάση.
+          <div className="md:col-span-2 rounded-xl bg-panel p-6">
+            {t.empty}
           </div>
         ) : (
           <>
             <TopicSidebar
-              topics={topics}
+              topics={shownTopics}
               activeTopicId={topicId}
               onSelect={selectTopic}
             />
 
             <section className="min-w-0">
-              <div className="mb-5">
-                <h2 className="break-words font-serif text-2xl">
-                  {topic?.label ?? "Επιλογή θέματος"}
-                </h2>
-
-                <p className="mt-1 text-sm text-stone-600">
-                  {topic?.description}
-                </p>
-              </div>
+              <h2 className="mb-4 break-words font-serif text-3xl">
+                {topic?.label ?? t.pickTopic}
+              </h2>
 
               <PartyFilters
-                parties={parties}
+                parties={shownParties}
                 selected={selectedParties}
                 onToggle={toggleParty}
                 onSelectAll={selectAllParties}
@@ -188,25 +189,25 @@ export function Dashboard() {
               <StatementFilters filters={filters} subcategories={subcategories}
                 invalidRange={invalidRange} onChange={setFilters}
                 onReset={() => setFilters(DEFAULT_FILTERS)} />
-              <p role="status" aria-live="polite" aria-atomic="true" className="mt-4 text-sm text-stone-600">
-                Εμφανίζονται {visibleStatements.length} από {statements.length} δηλώσεις
+              <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {t.showing(visibleStatements.length, statements.length)}
               </p>
 
               {visibleStatements.length === 0 ? (
-                <div className="mt-6 rounded-2xl border border-dashed border-stone-300 bg-white/70 p-8 text-center text-stone-600">
-                  <p>Δεν βρέθηκαν δηλώσεις με αυτά τα κριτήρια.</p>
+                <div className="mt-5 rounded-2xl border border-dashed border-line p-8 text-center text-muted">
+                  <p>{t.noResults}</p>
                   <button type="button" onClick={() => setFilters(DEFAULT_FILTERS)}
-                    className="mt-3 rounded-lg px-3 py-2 font-medium text-[#1b2a4a] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1b2a4a]">
-                    Καθαρισμός φίλτρων
+                    className="mt-3 rounded-lg px-3 py-2 font-medium text-foreground underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
+                    {t.resetFilters}
                   </button>
                 </div>
               ) : (
-                <div className="mt-6 grid min-w-0 gap-4 xl:grid-cols-2">
+                <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-2">
                   {visibleStatements.map((statement) => (
                     <div key={statement.id} className="min-w-0">
                       <StatementCard
                         statement={statement}
-                        party={parties.find(
+                        party={shownParties.find(
                           (party) => party.id === statement.partyId
                         )}
                       />
