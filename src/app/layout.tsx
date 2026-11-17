@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
+import { PREFS_BOOT, PrefsProvider } from "@/lib/prefs";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
@@ -23,8 +24,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="el"
       className={`${notoSans.variable} ${sourceSerif.variable} h-full antialiased`}
+      data-theme="dark"
+      suppressHydrationWarning
     >
-      <body className="min-h-full font-sans">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT }} />
+      </head>
+      <body className="min-h-full font-sans">
+        <PrefsProvider>{children}</PrefsProvider>
+      </body>
     </html>
   );
 }

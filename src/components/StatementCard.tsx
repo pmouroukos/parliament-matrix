@@ -1,21 +1,22 @@
 
 import type { Party, Statement } from "@/types/parliament";
 import { statementDate } from "@/lib/statement-filters";
+import { usePrefs, type Lang } from "@/lib/prefs";
 
 type StatementCardProps = {
   statement: Statement;
   party?: Party;
 };
 
-function formatDate(value: string): string {
+function formatDate(value: string, lang: Lang, none: string): string {
   const calendarDate = statementDate(value);
   if (!calendarDate) {
-    return "Δεν αναφέρεται";
+    return none;
   }
 
   const date = new Date(`${calendarDate}T00:00:00Z`);
 
-  return new Intl.DateTimeFormat("el-GR", {
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "el-GR", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -36,126 +37,45 @@ export function StatementCard({
   statement,
   party,
 }: StatementCardProps) {
+  const { lang, t } = usePrefs();
   const partyName = party?.shortName ?? statement.partyId;
   const hasQuote = Boolean(statement.quote?.trim());
   const hasSource = isValidSourceUrl(statement.sourceUrl);
 
   return (
-    <article className="flex h-full min-w-0 flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-[0_8px_24px_rgba(28,25,23,0.06)]">
-      {/* Κόμμα */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p
-            className="break-words text-base font-bold"
-            style={{ color: party?.accent ?? "#1b2a4a" }}
-          >
-            {partyName}
-          </p>
+    <article className="flex h-full min-w-0 flex-col rounded-2xl border border-line bg-panel p-5">
+      <p className="break-words text-lg font-bold" style={{ color: party?.accent ?? "#ecebe6" }} title={party?.fullName}>
+        {partyName}
+      </p>
 
-          {party?.fullName &&
-            party.fullName !== party.shortName && (
-              <p className="mt-1 text-xs text-stone-500">
-                {party.fullName}
-              </p>
-            )}
-        </div>
-
-        {statement.placeholder && (
-          <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900">
-            Placeholder
-          </span>
-        )}
-      </div>
-
-      {/* Υποκατηγορία */}
       {statement.subcategory && (
-        <div className="mt-4 rounded-xl bg-[#f4f1ea] px-4 py-3">
-          <p className="text-[11px] font-semibold tracking-wider text-stone-500 uppercase">
-            Υποκατηγορία
-          </p>
-
-          <h3 className="mt-1 break-words font-serif text-lg font-semibold text-[#1b2a4a]">
-            {statement.subcategory}
-          </h3>
-        </div>
+        <p className="mt-1 break-words text-xs font-semibold tracking-wider text-muted uppercase">
+          {statement.subcategory}
+        </p>
       )}
 
-      <dl className="mt-4 space-y-4 text-sm">
-        {/* Περίληψη */}
-        <div>
-          <dt className="text-[11px] font-semibold tracking-wider text-stone-500 uppercase">
-            Περίληψη
-          </dt>
-          <dd className="mt-1 break-words leading-relaxed text-stone-800">
-            {statement.summary}
-          </dd>
-        </div>
+      <p className="mt-2 break-words leading-relaxed text-foreground">
+        {statement.summary}
+      </p>
 
-        {/* Παράθεση */}
-        <div>
-          <dt className="text-[11px] font-semibold tracking-wider text-stone-500 uppercase">
-            Παράθεση
-          </dt>
+      {hasQuote && (
+        <blockquote className="mt-3 break-words rounded-lg bg-field px-4 py-3 font-serif text-[15px] leading-relaxed text-quote italic">
+          {lang === "en" ? `“${statement.quote}”` : `«${statement.quote}»`}
+        </blockquote>
+      )}
 
-          {hasQuote ? (
-            <dd className="mt-2 break-words border-l-2 border-[#d4b072] pl-3 font-serif text-[15px] leading-relaxed text-stone-700 italic">
-              «{statement.quote}»
-            </dd>
-          ) : (
-            <dd className="mt-1 text-xs text-stone-500">
-              Δεν υπάρχει διαθέσιμη ακριβής παράθεση.
-            </dd>
+      <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-4 text-sm text-muted">
+        <span className="min-w-0 break-words" title={statement.role}>{statement.speaker}</span>
+        <span className="flex items-baseline gap-3">
+          <span>{formatDate(statement.date, lang, t.noDate)}</span>
+          {hasSource && (
+            <a href={statement.sourceUrl} target="_blank" rel="noopener noreferrer"
+              className="font-medium text-foreground underline-offset-2 hover:underline">
+              {t.source} ↗
+            </a>
           )}
-        </div>
-
-        {/* Ομιλητής και ημερομηνία */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="min-w-0">
-            <dt className="text-[11px] font-semibold tracking-wider text-stone-500 uppercase">
-              Ομιλητής
-            </dt>
-            <dd className="mt-1 break-words font-medium text-stone-900">
-              {statement.speaker}
-            </dd>
-            <dd className="text-xs text-stone-500">
-              {statement.role}
-            </dd>
-          </div>
-
-          <div>
-            <dt className="text-[11px] font-semibold tracking-wider text-stone-500 uppercase">
-              Ημερομηνία
-            </dt>
-            <dd className="mt-1 text-stone-800">
-              {formatDate(statement.date)}
-            </dd>
-          </div>
-        </div>
-
-        {/* Πηγή */}
-        <div>
-          <dt className="text-[11px] font-semibold tracking-wider text-stone-500 uppercase">
-            Πηγή
-          </dt>
-
-          <dd className="mt-1">
-            {hasSource ? (
-              <a
-                href={statement.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="break-all font-medium text-[#1b2a4a] underline underline-offset-2 hover:text-[#0f1b33]"
-              >
-                Προβολή πηγής ↗
-              </a>
-            ) : (
-              <span className="text-xs text-stone-500">
-                Δεν υπάρχει διαθέσιμος σύνδεσμος πηγής.
-              </span>
-            )}
-          </dd>
-        </div>
-      </dl>
+        </span>
+      </div>
     </article>
   );
 }

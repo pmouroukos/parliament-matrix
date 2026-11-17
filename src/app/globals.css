@@ -1,14 +1,48 @@
-
 @import "tailwindcss";
 
-:root {
+/* Two themes. Dark is the look of the cover on the Commit Athens site: a dark
+   workspace under the navy bar. Light keeps the project's original paper tone. */
+:root,
+:root[data-theme="dark"] {
+  --background: #18191d;
+  --foreground: #ecebe6;
+  --panel: #222329;
+  --field: #1c1d22;
+  --line: #2e2f37;
+  --muted: #9a988f;
+  --quote: #d6d3cb;
+  --active-bg: #ecebe6;
+  --active-fg: #18191d;
+  --active-sub: #55534c;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
   --background: #f4f1ea;
   --foreground: #1c1917;
+  --panel: #ffffff;
+  --field: #f8f6f1;
+  --line: #e0dacd;
+  --muted: #6b675e;
+  --quote: #44403c;
+  --active-bg: #1b2a4a;
+  --active-fg: #f8f4ec;
+  --active-sub: #c9d1e0;
+  color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-field: var(--field);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-quote: var(--quote);
+  --color-active: var(--active-bg);
+  --color-active-fg: var(--active-fg);
+  --color-active-sub: var(--active-sub);
+  --color-navy: #1b2a4a;
   --font-sans: var(--font-noto-sans);
   --font-serif: var(--font-source-serif);
 }
